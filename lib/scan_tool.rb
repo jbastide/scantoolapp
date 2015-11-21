@@ -21,7 +21,7 @@ class ScanTool
 
   attr_accessor :pdf # Now we have automatic getter and setter 
                      # methods for these instance variables.
-  attr_accessor :trans
+  attr_accessor :trans_files
   attr_accessor :varer
   
   #
@@ -29,9 +29,9 @@ class ScanTool
   # pdf, trans, and varer files.
   #
   
-  def initialize(pdf, trans, varer)
+  def initialize(pdf, trans_files, varer)
     @pdf = pdf.to_io
-    @trans = trans.to_io
+    @trans = trans_files # Should be an array
     @varer = varer.to_io
   end
   
@@ -39,7 +39,7 @@ class ScanTool
   # Create a PDF reader object
   #
 
-  def makeReader(file)
+  def self.makeReader(file)
     reader = nil
   	reader = PDF::Reader.new(file)
     puts "Reader object: #{reader}"
@@ -52,7 +52,7 @@ class ScanTool
   # I think readlines may do it, but need to check.
   #
 
-  def verifyEntry(entry)
+  def self.verifyEntry(entry)
   	if entry == ""
   		return nil
   	else
@@ -66,7 +66,7 @@ class ScanTool
   # PDF parsing code.
   #
 
-  def splitIntoSections(page)	
+  def self.splitIntoSections(page)	
   	sublist = []
 
   	#
@@ -99,7 +99,7 @@ class ScanTool
   		elsif entry =~ /Last/ or entry =~ /Utskriftstid/
   			match = false # Use that keyword match as the separator
   		elsif match == true # Only after all the checks are true do we push the data to the list.
-  			verifiedEntry = verifyEntry(entry)
+  			verifiedEntry = ScanTool.verifyEntry(entry)
   			if verifiedEntry != nil
   				sublist << verifiedEntry
   			end
@@ -112,7 +112,7 @@ class ScanTool
   # Helper function.
   #
 
-  def convertNumField(strEntry)
+  def self.convertNumField(strEntry)
   	newEntry = strEntry.lstrip.chomp.split()
   	return newEntry[0].to_i
   end
@@ -123,7 +123,7 @@ class ScanTool
   # There's a bug whereby part of the order number can end up in the description field. 
   #
 
-  def parseEntry(entry)
+  def self.parseEntry(entry)
   	splitEntry = []
 		
   	# Get the item number
@@ -147,7 +147,7 @@ class ScanTool
 
   	itemQuant = /\s{12,}(\d+).{,6}?$/.match(entry.lstrip.chomp)
 
-  	itemQuantity = convertNumField(itemQuant[1])
+  	itemQuantity = ScanTool.convertNumField(itemQuant[1])
   	splitEntry << itemQuantity
 	
   	return splitEntry
@@ -157,7 +157,7 @@ class ScanTool
   # Create a sorted list of Item numbers and descriptions based on the master list.
   #
 
-  def generateSortedList(masterHashList)
+  def self.generateSortedList(masterHashList)
   	# Create list of item numbers'
   	itemNumbers = []
 	
@@ -175,19 +175,19 @@ class ScanTool
   #
   #
 
-  def createMasterList(reader)
+  def self.createMasterList(reader)
   	# Start by making a big list of item description strings.
   	masterStringList = []
   	masterHashList = []
 	
   	reader.pages.each do |page|
-  		section = splitIntoSections(page)
+  		section = ScanTool.splitIntoSections(page)
   		masterStringList.concat(section)
   	end
 	
   	masterStringList.each do |entry|
   		# Here the entry is broken into list elements in its own array.
-  		parsedEntry = parseEntry(entry)
+  		parsedEntry = ScanTool.parseEntry(entry)
   		entryHash = {:itemNum => parsedEntry[0],
   					 :itemDesc => parsedEntry[1],
   					 :itemQuant => parsedEntry[2],
@@ -211,7 +211,7 @@ class ScanTool
   # number.
   #
 
-  def createSortedItemDescList(sortedList, masterHashList)
+  def self.createSortedItemDescList(sortedList, masterHashList)
   	descList = []
 	
   	masterHashList.each do |entry|
@@ -233,7 +233,7 @@ class ScanTool
   # the PDF packing list.
   #
 
-  def viewSortedItemDescList(descList)
+  def self.viewSortedItemDescList(descList)
   	itemTotal = 0 # Total number of individual items in the order.
 	
   	displayTable = table do
@@ -258,7 +258,7 @@ class ScanTool
   # TODO: Allow us to specify a filename.
   #
 
-  def outputFileSortedTable(tabularItemList)
+  def self.outputFileSortedTable(tabularItemList)
   	f = File.new("sortedPackingList.txt","w")
   	f.write(tabularItemList)
   end
@@ -267,7 +267,7 @@ class ScanTool
   # Returns a list of individual lines.
   #
 
-  def processFile(fileHandle)
+  def self.processFile(fileHandle)
   	puts "Processing file."
 	
   	begin
@@ -283,7 +283,7 @@ class ScanTool
   # Transform the EAN data into a useful, hashed form.
   #
 
-  def transformEanFile(itemIdDescList)
+  def self.transformEanFile(itemIdDescList)
   	#
   	# Standard processing stuff. Chomp trailing spaces. Ignore blank lines.
   	# The numeric codes are thirteen characters, then the rest is the item 
@@ -303,9 +303,11 @@ class ScanTool
   		# I'm willing to try this hack because the description matches will use 'fuzzy' matching
   		# instead of regular expressions.
   		#
-	
-  		cleanEntry = cleanEntry.encode("UTF-16be", :invalid=>:replace, :replace=>"?").encode('UTF-8').lstrip.rstrip	
-  		begin # TODO: Can't we un-nest the begin/rescue statement here? Would be good to test this. 
+	    # This encoding hack is broken in rails.
+  		cleanEntry = cleanEntry.lstrip.rstrip	
+  		#cleanEntry = cleanEntry.encode("UTF-16be", :invalid=>:replace, :replace=>"?").encode('UTF-8').lstrip.rstrip	
+  		
+      begin # TODO: Can't we un-nest the begin/rescue statement here? Would be good to test this. 
   			itemID = cleanEntry.match(/^(\d{13})/)[1]
   			begin
   				itemDescription = cleanEntry.match(/^\d{13}(.+)/)[1]
@@ -329,7 +331,7 @@ class ScanTool
   # Return a list of the form: [{itemEAN => {itemQuant: , itemSerial: }}]
   #
 
-  def transformScannerData(scanDataList)
+  def self.transformScannerData(scanDataList)
   	hashedData = {}
 
   	scanDataList.each do |entry|
@@ -382,7 +384,7 @@ class ScanTool
   # output from the scanner (EAN => Quantity | serial number).
   #
 
-  def generateDescriptionQuantityMap(hashedScannerData, hashedEanFile)
+  def self.generateDescriptionQuantityMap(hashedScannerData, hashedEanFile)
   	descQuant = []	
   	hashedScannerData.keys.each do |itemID|
   		if hashedEanFile[itemID]
@@ -405,7 +407,7 @@ class ScanTool
   # up and down on the screen.
   #
 
-  def getAllMatches(descQuant, masterHashList)
+  def self.getAllMatches(descQuant, masterHashList)
     itemsMatched = []
   	match = nil
   	jarow = FuzzyStringMatch::JaroWinkler.create( :native )
@@ -452,7 +454,7 @@ class ScanTool
   end
 
 
-  def calculateTotalItemsScanned(combinedData)
+  def self.calculateTotalItemsScanned(combinedData)
   	scannedTotal = 0
 
   	combinedData.each do |entry|
@@ -472,7 +474,7 @@ class ScanTool
   # a duplicate and will throw off the matching algorithm.
   #
 
-  def descFreqColorCheck(entry)
+  def self.descFreqColorCheck(entry)
   	frequency = entry[:descriptionFrequency]
 	
   	if frequency > 1
@@ -486,7 +488,7 @@ class ScanTool
   # Helper to color code results based on match confidence.
   #
 
-  def confidenceColorCheck(entry)
+  def self.confidenceColorCheck(entry)
   	confidence = entry[:confidence]
 
   	if confidence == nil
@@ -510,7 +512,7 @@ class ScanTool
   # Look for duplicate descriptions
   #
 
-  def duplicateDescriptionUpdate(combinedData)
+  def self.duplicateDescriptionUpdate(combinedData)
     #	
   	# Items that have duplicate descriptions should be flagged for manual follow-up.
   	# N^2 sized comparison. 
@@ -556,9 +558,9 @@ class ScanTool
   # Data visualization. Table of items, including expected and scanned quantities.
   #
 
-  def showCombinedData(combinedData)
+  def self.showCombinedData(combinedData)
 
-  	totalItemsScanned = calculateTotalItemsScanned(combinedData)
+  	totalItemsScanned = ScanTool.calculateTotalItemsScanned(combinedData)
     combinedData = combinedData.sort_by {|k| k[:itemDesc].downcase}
   
   	displayTable = table do 
@@ -566,8 +568,8 @@ class ScanTool
   "Scanned_Quant", "Confidence", "Desc Freq"
 	
       combinedData.each do |entry|
-        colorCodedFrequency = descFreqColorCheck(entry)
-  		  colorCodedConfidence = confidenceColorCheck(entry)
+        colorCodedFrequency = ScanTool.descFreqColorCheck(entry)
+  		  colorCodedConfidence = ScanTool.confidenceColorCheck(entry)
   		  add_row [ entry[:itemNum], entry[:scannedEAN],
   	      entry[:itemDesc], entry[:scannedDescription], 
   	      entry[:itemQuant], entry[:scannedQuantity], colorCodedConfidence, colorCodedFrequency ]
@@ -587,7 +589,7 @@ class ScanTool
 
 
 
-  def makeUniqMasterHash(masterHashList)
+  def self.makeUniqMasterHash(masterHashList)
   
     #
     # Transform the existing list to make it unique with updated item quantities.
@@ -666,7 +668,7 @@ class ScanTool
   #						itemSerials: hashedScannerData[itemID][:serialNumbers]}
   #
 
-  def findUnmatchedResults(descQuant, uniqHashList)
+  def self.findUnmatchedResults(descQuant, uniqHashList)
   
     matched = []
     notMatched = []
@@ -700,7 +702,7 @@ class ScanTool
     puts displayTable
   end
 
-  def displayAllScanned(descQuant)
+  def self.displayAllScanned(descQuant)
     sorted = []
     sorted = descQuant.sort_by {|k| k[:itemDescription].downcase}
     sorted.each do |scanned|
@@ -715,11 +717,10 @@ class ScanTool
   #
   
   def runAnalysis
-    scanDataFileHandles = [@trans] # We'll need a way to input multiple file handles 
-                                   # from the upload form.
+    scanDataFileHandles = @trans #This is an array of uploaded files
     scanDataList = nil
     hashedScannerData = {}
-    eanFileHandle = @varer
+    eanFileHandle = @varer.to_io
     eanMapList = nil
     hashedEanFile = {}
     descQuant = [] # EANs, descriptions, and scanned quantities. Used when we
@@ -727,7 +728,7 @@ class ScanTool
     tabularItemList = []
     
   	
-	  reader = makeReader(@pdf)
+	  reader = ScanTool.makeReader(@pdf)
     puts "DEBUG: Reader: #{reader}"
 		if reader
 			puts "Created reader object from packing list."
@@ -736,9 +737,9 @@ class ScanTool
     end
   
     
-  	masterHashList = createMasterList(reader)
-  	sortedItemNumList = generateSortedList(masterHashList)
-  	nestedItemList = createSortedItemDescList(sortedItemNumList, masterHashList)
+  	masterHashList = ScanTool.createMasterList(reader)
+  	sortedItemNumList = ScanTool.generateSortedList(masterHashList)
+  	nestedItemList = ScanTool.createSortedItemDescList(sortedItemNumList, masterHashList)
   	
     #
     # For now, we'll write all this to the console. Later, we'll just return data
@@ -746,16 +747,16 @@ class ScanTool
     # code will get taken out.
     #
     
-    tabularItemList = viewSortedItemDescList(nestedItemList)
+    tabularItemList = ScanTool.viewSortedItemDescList(nestedItemList)
     
   	begin
   		puts "INFO: Processing EAN mapping file." # This is varer.dat
   		masterEanMapList = []                    
-  		eanMapList = processFile(@varer)
+  		eanMapList = ScanTool.processFile(@varer)
       masterEanMapList.concat(eanMapList) # Make the master list one big list. That's why we use concat.
                                           # We may not even need this, because varer.dat is always a single file.
                                           # Could do: masterEanMapList = processFile(@varer)
-      hashedEanFile = transformEanFile(masterEanMapList)
+      hashedEanFile = ScanTool.transformEanFile(masterEanMapList)
     
   	rescue Exception => e
   		puts "Unable to process EAN mapping file"
@@ -766,33 +767,32 @@ class ScanTool
   	begin
   		puts "INFO: Processing scan data file."
   		masterScanDataList = []
-      byebug
       scanDataFileHandles.each do |file|
-  		  scanDataList = processFile(file)
+  		  scanDataList = ScanTool.processFile(file.to_io)
         masterScanDataList.concat(scanDataList)
       end
-  		hashedScannerData = transformScannerData(masterScanDataList)
+  		hashedScannerData = ScanTool.transformScannerData(masterScanDataList)
   	rescue
   		puts "ERROR: Unable to process scan data file."
   	end
     
 
-    descQuant = generateDescriptionQuantityMap(hashedScannerData, hashedEanFile)
+    descQuant = ScanTool.generateDescriptionQuantityMap(hashedScannerData, hashedEanFile)
     
     #
     # Need to make the master hash list sorted by SKU as well as containing only
     # unique items.
     #
 
-    uniqHashList = makeUniqMasterHash(masterHashList)
+    uniqHashList = ScanTool.makeUniqMasterHash(masterHashList)
     
     
   	#	
   	# Match scanned output with packing list data to make a list of items received.
   	# Be prepared for there to be items with different EANs but the same description.
   	#
-
-  	combinedData = getAllMatches(descQuant, uniqHashList)
+    #byebug
+  	combinedData = ScanTool.getAllMatches(descQuant, uniqHashList)
   
     #
     # Transform the combined scanner and packing list data, adding in values for 
@@ -802,11 +802,11 @@ class ScanTool
     # that match on a duplicate description.
     #
   
-    combinedData = duplicateDescriptionUpdate(combinedData)
+    combinedData = ScanTool.duplicateDescriptionUpdate(combinedData)
 	
   	# Take the combined data and display it in a nice table.
-
-  	showCombinedData(combinedData)
+    
+  	ScanTool.showCombinedData(combinedData)
 
     #
   	# Show all scanned items. Use this as a reference for now. 
@@ -816,7 +816,7 @@ class ScanTool
     #
 
     puts "All scanned results for matching against holes in matched list"
-    displayAllScanned(descQuant)
+    ScanTool.displayAllScanned(descQuant)
   end
 end
 

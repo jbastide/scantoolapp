@@ -10,13 +10,12 @@ class StaticPagesController < ApplicationController
     @msg = "This is the static pages controller and I'm fucking around with it."
     
     #Looks like code for the home page goes here.
-    @pdf_file = params[:pdf]
-    @varer = params[:varer]
-    @trans = params[:trans]
+    #@pdf_file = params[:pdf]
+    #@trans = params[:trans] # This should be an array. 
     
     
     
-    #@varer_file
+    #@varer_file = params[:varer]
     #@trans_file
   end
   
@@ -30,15 +29,16 @@ class StaticPagesController < ApplicationController
   def upload
     
     pdf = params[:pdf]
+    trans_files = params[:trans]
     varer = params[:varer]
-    trans = params[:trans]
+    
     
     # I'm building it within the upload action for now.
     
     
     # Get filehandles for files. Pass these in as parameters to the script. 
-    
-    @scanTool = ScanTool.new(pdf,varer,trans)
+    byebug
+    @scanTool = ScanTool.new(pdf,trans_files,varer)
  
     @result = @scanTool.runAnalysis
 

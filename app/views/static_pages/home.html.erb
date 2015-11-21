@@ -6,7 +6,6 @@ A simple-ass, one-page app. -->
 <h1>New Order Processing</h1>
 
 <%= form_tag('/upload', multipart: true) do -%>
-	<%= puts "In partial message form"%>
     <%=label_tag 'PDF File' %>
     <%=file_field_tag(:pdf)%>
 
@@ -14,12 +13,11 @@ A simple-ass, one-page app. -->
     <%=file_field_tag(:varer)%>
 	
     <%=label_tag 'Trans File' %>
-    <%=file_field_tag(:trans)%>
+    <%=file_field_tag 'trans[]', :multiple => :true %>
 
     <div><%= submit_tag 'Save' %></div>
 <% end -%>
 
-Value of variables. <%= @varer  %>; <%= @pdf_file %>; <%= @varer%>
 
-<%= params[:pdf] %>
+
 

@@ -1,12 +1,13 @@
-# TODO: Move dependencies into a gemspec and use bundler.
 # encoding: utf-8
-require 'ostruct'
-require 'pp'
-require 'pdf-reader'
-require 'terminal-table/import'
-require 'fuzzystringmatch'
-require 'colorize'
-require 'byebug'
+# TODO: Move dependencies into a gemspec and use bundler.
+
+#require 'ostruct'
+#require 'pp'
+#require 'pdf-reader'
+#require 'terminal-table/import'
+#require 'fuzzystringmatch'
+#require 'colorize'
+#require 'byebug'
 
 EANMAPFILEPATH = "./varer.dat" #In this example, we have the varer.dat file in the
                                # same directory that we're running the tool.
@@ -23,6 +24,8 @@ class ScanTool
                      # methods for these instance variables.
   attr_accessor :trans_files
   attr_accessor :varer
+  #attr_accessor :combinedData # Don't need these.
+  #attr_accessor :allScannedItems
   
   #
   # Initialize a new ScanTool. Get the filehandles to the 
@@ -269,7 +272,10 @@ class ScanTool
 
   def self.processFile(fileHandle)
   	puts "Processing file."
-	
+	  
+    # Transcode.
+    fileHandle = fileHandle.set_encoding("ISO-8859-1:UTF-8")
+    
   	begin
   		lineArray = fileHandle.readlines
   	rescue
@@ -747,7 +753,7 @@ class ScanTool
     # code will get taken out.
     #
     
-    tabularItemList = ScanTool.viewSortedItemDescList(nestedItemList)
+    #tabularItemList = ScanTool.viewSortedItemDescList(nestedItemList)
     
   	begin
   		puts "INFO: Processing EAN mapping file." # This is varer.dat
@@ -806,7 +812,7 @@ class ScanTool
 	
   	# Take the combined data and display it in a nice table.
     
-  	ScanTool.showCombinedData(combinedData)
+  	#ScanTool.showCombinedData(combinedData)
 
     #
   	# Show all scanned items. Use this as a reference for now. 
@@ -815,8 +821,9 @@ class ScanTool
     # addiitonal matches in the final report.
     #
 
-    puts "All scanned results for matching against holes in matched list"
-    ScanTool.displayAllScanned(descQuant)
+    #puts "All scanned results for matching against holes in matched list"
+    #ScanTool.displayAllScanned(descQuant)
+    return combinedData,descQuant
   end
 end
 

@@ -1,3 +1,4 @@
+<% #encoding: utf-8 %>
 <!DOCTYPE html>
 <html>
 <title><%= full_title(yield(:title)) %></title>
@@ -7,9 +8,13 @@
   <%= csrf_meta_tags %>
 </head>
 <body>
-
-<%= yield %>
-<%= debug(params) if Rails.env.development? %>
-
+<div class="container">
+	<div class="row">
+		<div class="col-md-9">
+			<%= yield %>
+			<%= debug(params) if Rails.env.development? %>
+		</div>
+	</div>
+</div>
 </body>
 </html>

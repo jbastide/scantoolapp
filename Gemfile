@@ -6,8 +6,13 @@ gem 'pdf-reader'
 gem 'terminal-table'
 gem 'fuzzy-string-match'
 gem 'colorize'
-gem "paperclip", "~> 4.3"
 gem 'rename'
+
+# Twitter Bootstrap and LESS support
+gem "therubyracer"
+gem "less-rails"
+gem "twitter-bootstrap-rails"
+
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.4'

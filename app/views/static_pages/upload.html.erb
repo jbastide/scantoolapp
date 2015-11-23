@@ -1,16 +1,48 @@
+<% # encoding: utf-8 %>
 <% provide(:title, "Upload") %>
 
-<!-- This is where all the magic of displaying shit will happen.
-A simple-ass, one-page app. -->
+<!-- A simple app. -->
 
-<h1>This is where we do shit with your order</h1>
+<h1>Item Counts</h1>
+<h2>Report: Expected vs. Scanned</h2>
+<table>
+	<th>Article Number</th>
+	<th>EAN Code</th>
+	<th>Description</th>
+	<th>Scanned Description</th>
+	<th>Expected Count</th>
+	<th>Scanned Count</th>
+	<th>Match Confidence</th>
+	<th>Duplicates Present</th>
+	<% @combinedData[0].each do |data| %>
+		<tr>
+			<td><%= data[:itemNum] %></td>
+			<td><%= data[:scannedEAN]%></td>
+			<td><%= data[:itemDesc]%></td>
+			<td><%= data[:scannedDescription] %> </td>
+			<td><%= data[:itemQuant]%></td>
+			<td><%= data[:scannedQuantity]%></td>
+			<td><%= data[:confidence]%></td>
+			<td><%= data[:descriptionFrequency]%></td>
+		</tr>	
+	<% end %>
+</table>
 
-<!-- PDF: <%= @pdf %>;
-Varer: <%= @varer %>;
-Trans: <%= @dat %>; -->
-
-<!-- Scantool this is the PDF<%= @scanTool.pdf.class%> -->
-
-This is the result<% @result %>
-
+<h2>Report: All Scanned (for sanity checks)</h2>
+<table>
+	<th>EAN Code</th>
+	<th>Description</th>
+	<th>Quantity</th>
+	<% @combinedData[1].each do |data| %>
+		<tr>
+			<td><%= data[:itemEAN] %></td>
+			<td><%= data[:itemDescription] %></td>
+			<td><%= data[:itemQuantity] %></td>
+		</tr>
+	<% end %>
+</table>
+			
+			
+			
+				
 

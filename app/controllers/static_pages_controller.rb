@@ -1,4 +1,4 @@
-
+# encoding: utf-8
 #
 # Right now, there's no model in the application. We have a custom class that
 # represents a scan tool. I'm going to write it this way, and then when it's working, 
@@ -6,17 +6,7 @@
 #
 
 class StaticPagesController < ApplicationController  
-  def home
-    @msg = "This is the static pages controller and I'm fucking around with it."
-    
-    #Looks like code for the home page goes here.
-    #@pdf_file = params[:pdf]
-    #@trans = params[:trans] # This should be an array. 
-    
-    
-    
-    #@varer_file = params[:varer]
-    #@trans_file
+  def home    
   end
   
   
@@ -26,7 +16,7 @@ class StaticPagesController < ApplicationController
   # index page to start. We want to ensure the files get uploaded.
   # UPDATE: Not using this action for now. All staying on the home page.
   
-  def upload
+  def upload #could be called analyze
     
     pdf = params[:pdf]
     trans_files = params[:trans]
@@ -37,10 +27,10 @@ class StaticPagesController < ApplicationController
     
     
     # Get filehandles for files. Pass these in as parameters to the script. 
-    byebug
     @scanTool = ScanTool.new(pdf,trans_files,varer)
  
-    @result = @scanTool.runAnalysis
+    @combinedData = @scanTool.runAnalysis
+    
 
     
   end

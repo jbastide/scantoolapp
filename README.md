@@ -1,6 +1,6 @@
 # scantoolapp
 
-This isn't pretty, and it's still under development.
+Still under development.
 
 Here's where we're at:
 
@@ -14,7 +14,8 @@ There's no model. Just a custom class, view code, and controller code. The ScanT
 
 TODOs:
 
--Add validations for files.
+-Add validations for files. We can start with server-side validations for now, then move things into the client.
+-Deploy to Heroku.
 -Configure Twitter Bootstrap and throw in some js. 
 -Re-evaluate RESTful URL names and corresponding controller actions and routes.
 -Add persistence layer for results.
